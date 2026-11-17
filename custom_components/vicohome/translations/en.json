@@ -1,0 +1,91 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "description": "Use a secondary VicoHome account with the cameras shared to it: each login signs the same account out of the app.",
+        "data": {
+          "email": "Email",
+          "password": "Password",
+          "region": "Cloud region",
+          "country": "Country code",
+          "language": "Language"
+        }
+      },
+      "reauth_confirm": {
+        "description": "Enter the password for {email} again.",
+        "data": {
+          "password": "Password"
+        }
+      }
+    },
+    "error": {
+      "invalid_auth": "Invalid email or password",
+      "cannot_connect": "Cannot reach the VicoHome cloud",
+      "no_devices": "No cameras in this account. Share them from the main account first."
+    },
+    "abort": {
+      "already_configured": "This account is already configured",
+      "reauth_successful": "Re-authentication was successful"
+    }
+  },
+  "entity": {
+    "sensor": {
+      "signal": {
+        "name": "Wi-Fi signal"
+      },
+      "ip": {
+        "name": "IP address"
+      },
+      "wifi": {
+        "name": "Wi-Fi network"
+      },
+      "last_event": {
+        "name": "Last event"
+      }
+    },
+    "binary_sensor": {
+      "recent_event": {
+        "name": "Recent event"
+      },
+      "awake": {
+        "name": "Awake"
+      }
+    },
+    "event": {
+      "activity": {
+        "name": "Activity",
+        "state_attributes": {
+          "event_type": {
+            "state": {
+              "ring": "Ring",
+              "person": "Person",
+              "vehicle": "Vehicle",
+              "pet": "Pet",
+              "package": "Package",
+              "motion": "Motion",
+              "live": "Live recorded"
+            }
+          }
+        }
+      }
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Recordings",
+        "description": "What to keep on the Home Assistant host (config/vicohome folder). Recordings older than the given days are deleted.",
+        "data": {
+          "archive_events": "Save event clips",
+          "record_live": "Record live views",
+          "retention_days": "Days to keep"
+        },
+        "data_description": {
+          "archive_events": "Download every event (ring, person, motion) from the cloud about a minute after it ends.",
+          "record_live": "Save what you watch live. Live views with the microphone on are not recorded.",
+          "retention_days": "Lowering it deletes older recordings right away."
+        }
+      }
+    }
+  }
+}

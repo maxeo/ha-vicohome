@@ -1,0 +1,20 @@
+{
+  "domain": "vicohome",
+  "name": "VicoHome",
+  "codeowners": [],
+  "config_flow": true,
+  "dependencies": [
+    "camera",
+    "http"
+  ],
+  "documentation": "https://github.com/",
+  "integration_type": "hub",
+  "iot_class": "cloud_polling",
+  "requirements": [
+    "firebase-messaging>=0.4.0"
+  ],
+  "version": "0.4.0",
+  "after_dependencies": [
+    "media_source"
+  ]
+}

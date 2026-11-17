@@ -1,0 +1,91 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "description": "Usa un account VicoHome secondario con le camere condivise: ogni accesso scollega lo stesso account dall'app.",
+        "data": {
+          "email": "Email",
+          "password": "Password",
+          "region": "Regione del cloud",
+          "country": "Codice paese",
+          "language": "Lingua"
+        }
+      },
+      "reauth_confirm": {
+        "description": "Inserisci di nuovo la password di {email}.",
+        "data": {
+          "password": "Password"
+        }
+      }
+    },
+    "error": {
+      "invalid_auth": "Email o password non validi",
+      "cannot_connect": "Impossibile raggiungere il cloud VicoHome",
+      "no_devices": "Nessuna camera in questo account. Condividile prima dall'account principale."
+    },
+    "abort": {
+      "already_configured": "Questo account è già configurato",
+      "reauth_successful": "Nuova autenticazione riuscita"
+    }
+  },
+  "entity": {
+    "sensor": {
+      "signal": {
+        "name": "Segnale Wi-Fi"
+      },
+      "ip": {
+        "name": "Indirizzo IP"
+      },
+      "wifi": {
+        "name": "Rete Wi-Fi"
+      },
+      "last_event": {
+        "name": "Ultimo evento"
+      }
+    },
+    "binary_sensor": {
+      "recent_event": {
+        "name": "Evento recente"
+      },
+      "awake": {
+        "name": "Sveglio"
+      }
+    },
+    "event": {
+      "activity": {
+        "name": "Attività",
+        "state_attributes": {
+          "event_type": {
+            "state": {
+              "ring": "Suonato",
+              "person": "Persona",
+              "vehicle": "Veicolo",
+              "pet": "Animale",
+              "package": "Pacco",
+              "motion": "Movimento",
+              "live": "Live registrata"
+            }
+          }
+        }
+      }
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Registrazioni",
+        "description": "Cosa conservare sul server di Home Assistant (cartella config/vicohome). Le registrazioni più vecchie dei giorni indicati vengono cancellate.",
+        "data": {
+          "archive_events": "Salva le clip degli eventi",
+          "record_live": "Registra le live",
+          "retention_days": "Giorni di conservazione"
+        },
+        "data_description": {
+          "archive_events": "Scarica dal cloud ogni evento (suonato, persona, movimento) circa un minuto dopo la fine.",
+          "record_live": "Salva ciò che guardi in diretta. Con il microfono acceso la live non viene registrata.",
+          "retention_days": "Riducendo il numero, le registrazioni più vecchie vengono cancellate subito."
+        }
+      }
+    }
+  }
+}
