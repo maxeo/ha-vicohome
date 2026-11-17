@@ -20,13 +20,13 @@ TAG_TO_TYPE = {
 PUSH_TYPE_TO_EVENT = {"3": "ring"}
 EVENT_TYPES = ["ring", "person", "vehicle", "pet", "package", "motion", "live"]
 TYPE_LABEL_IT = {
-    "ring": "Suonato",
+    "ring": "Campanello",
     "person": "Persona",
     "vehicle": "Veicolo",
     "pet": "Animale",
     "package": "Pacco",
     "motion": "Movimento",
-    "live": "Live registrata",
+    "live": "Camera avviata",
 }
 
 

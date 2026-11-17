@@ -4,6 +4,8 @@
   "codeowners": [],
   "config_flow": true,
   "dependencies": [
+    "frontend",
+    "websocket_api",
     "camera",
     "http"
   ],
@@ -13,7 +15,7 @@
   "requirements": [
     "firebase-messaging>=0.4.0"
   ],
-  "version": "0.4.0",
+  "version": "0.5.12",
   "after_dependencies": [
     "media_source"
   ]

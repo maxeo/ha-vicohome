@@ -63,7 +63,7 @@
               "pet": "Pet",
               "package": "Package",
               "motion": "Motion",
-              "live": "Live recorded"
+              "live": "Camera started"
             }
           }
         }
@@ -80,7 +80,7 @@
           "retention_days": "Keep recordings for"
         },
         "data_description": {
-          "record": "Events are downloaded from the cloud about a minute after they end. Live views with the microphone on are not recorded. Without \"Live views\" the live goes straight from the camera to the browser.",
+          "record": "Events are downloaded from the cloud about a minute after they end. Live views with the microphone on are not recorded. Without \"Camera started\" the live goes straight from the camera to the browser.",
           "retention_days": "Older recordings are deleted. Shortening it deletes the ones already past the limit right away. With \"Forever\" they stay until you delete them from the config/vicohome folder."
         }
       },
@@ -110,13 +110,13 @@
     },
     "record": {
       "options": {
-        "ring": "Doorbell rings",
+        "ring": "Doorbell",
         "person": "Person",
         "vehicle": "Vehicle",
         "pet": "Pet",
         "package": "Package",
-        "motion": "Other motion",
-        "live": "Live views opened in Home Assistant"
+        "motion": "Motion",
+        "live": "Camera started"
       }
     }
   }

@@ -3,7 +3,7 @@
 Integrazione custom per camere e campanelli **VicoHome** (piattaforma A4x/Addx), con
 **live view nativa WebRTC** nel player di Home Assistant.
 
-Stato: **0.4.0, sperimentale**. Provata il 17/11/2026 con un campanello DB2 (a batteria): live con audio, anche con il campanello su un'altra rete; live registrate e clip archiviate in locale.
+Stato: **0.5.12, sperimentale**. Provata il 17/11/2026 con un campanello DB2 (a batteria): live con audio, anche con il campanello su un'altra rete; live registrate e clip archiviate in locale.
 
 ## Cosa fa
 
@@ -15,7 +15,8 @@ Per ogni camera dell'account (anche quelle condivise):
 | Batteria, segnale Wi-Fi, IP, rete Wi-Fi | `/device/listuserdevices` |
 | Ultimo evento (con tag AI, foto e video HLS negli attributi) | `/library/newselectlibrary` |
 | Evento recente (on per 2 minuti dopo un evento), in carica, online, sveglio | idem |
-| **Evento** `event.*_attivita`: `ring` (suonato), `person`, `vehicle`, `pet`, `package`, `motion`, `live` (live registrata, quando il file è salvato) | **push FCM istantanea** (misurato ~1 s dalla pressione); in riserva i nuovi elementi della libreria (polling 30 s) |
+| **Evento** `event.*_attivita`: `ring` (campanello), `person`, `vehicle`, `pet`, `package`, `motion`, `live` (camera avviata, quando il file è salvato) | **push FCM istantanea** (misurato ~1 s dalla pressione); in riserva i nuovi elementi della libreria (polling 30 s) |
+| Scheda dashboard **VicoHome: eventi** (`custom:vicohome-events-card`): eventi e live con foto, etichetta e ora, in elenco o in griglia divisi per giorno; filtro per periodo (oggi, ieri, ultime 24 ore, 7 o 30 giorni, un giorno o un intervallo dal calendario) e per tipo, "Carica altri" per andare indietro; toccandone uno il video si apre in una finestra | comando websocket `vicohome/events` (archivio + cloud, URL firmati per 1 ora); il JS è servito da `/vicohome_static/` e caricato sempre |
 | **Archivio locale** (7 giorni) in `/config/vicohome/<entry>/`: ogni evento finito viene scaricato come MP4 + JPEG, e ogni live guardata viene registrata | eventi: HLS della libreria convertito da ffmpeg senza ricodifica (la traccia audio iniziale blocca il player); live: ffmpeg legge l'RTSP del ponte go2rtc (video copiato, audio in AAC) |
 | **Media browser** → VicoHome → camera: archivio locale + clip cloud non ancora scaricate (☁) | archivio servito da `/api/vicohome/archive/...`, clip cloud convertite al volo da `/api/vicohome/clip/...` |
 
@@ -64,10 +65,26 @@ Copiare `custom_components/vicohome` in `/config/custom_components/`, riavviare 
 poi Impostazioni → Dispositivi e servizi → Aggiungi integrazione → **VicoHome**.
 
 **Opzioni** (⚙ Configura sull'integrazione):
-- **Cosa registrare**: campanello suonato, persona, veicolo, animale, pacco, altri movimenti, live aperte da HA
-  (scelta multipla; senza "live" la live va diretta camera → browser, senza go2rtc);
+- **Cosa registrare**: campanello, persona, veicolo, animale, pacco, movimento, camera avviata (live aperta da HA)
+  (scelta multipla; senza "camera avviata" la live va diretta camera → browser, senza go2rtc);
 - **Conservazione**: da 1 giorno a 1 anno, "Per sempre" (cancellazione manuale da `config/vicohome`) o
   "Personalizzato…" (secondo passaggio con il numero di giorni, fino a 3650).
+
+La scheda eventi è sempre disponibile in "Aggiungi scheda" (**VicoHome: eventi**); va aggiunta a mano alla
+dashboard che si preferisce. Configurazione (tutti i campi sono facoltativi):
+
+```yaml
+type: custom:vicohome-events-card
+camera: camera.cancello_esterno_campanello      # senza: tutte le camere
+event_entity: event.cancello_esterno_campanello_attivita  # si aggiorna a ogni nuovo evento
+limit: 12                                      # eventi per pagina
+layout: list                                   # list (elenco per giorno) o grid; il pulsante in alto lo cambia
+columns: 3                                     # solo per grid
+title: Eventi
+```
+
+Le opzioni si applicano senza ricaricare l'integrazione: così le entità non diventano "non disponibili" e
+l'entità evento non registra di nuovo l'ultimo evento ripristinato.
 
 L'icona è in `custom_components/vicohome/brand/` (HA la usa per le integrazioni custom); il sorgente
 vettoriale è `docs/icon.svg`.

@@ -3,6 +3,11 @@
 from __future__ import annotations
 
 from homeassistant.const import CONF_EMAIL, CONF_PASSWORD, EVENT_HOMEASSISTANT_STOP, Platform
+import json
+from pathlib import Path
+
+from homeassistant.components.frontend import add_extra_js_url
+from homeassistant.components.http import StaticPathConfig
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 
@@ -26,8 +31,14 @@ from .const import (
 from .coordinator import VicoConfigEntry, VicoCoordinator
 from .push import VicoPush
 from .relay import RELAY_KEY, VicoRelay, VicoWhepView
+from .websocket import async_setup_websocket
 
 _LOGGER = logging.getLogger(__name__)
+
+CARD_DIR_URL = "/vicohome_static"
+# The version in the URL makes browsers fetch the card again after an update.
+_VERSION = json.loads((Path(__file__).parent / "manifest.json").read_text(encoding="utf-8"))["version"]
+CARD_URL = f"{CARD_DIR_URL}/vicohome-events-card.js?v={_VERSION}"
 
 PLATFORMS = [Platform.BINARY_SENSOR, Platform.CAMERA, Platform.EVENT, Platform.SENSOR]
 
@@ -53,6 +64,12 @@ async def async_setup_entry(hass: HomeAssistant, entry: VicoConfigEntry) -> bool
             await relay.async_stop()
 
         hass.bus.async_listen_once(EVENT_HOMEASSISTANT_STOP, _stop_relay)
+        async_setup_websocket(hass)
+        await hass.http.async_register_static_paths([
+            StaticPathConfig(CARD_DIR_URL, str(Path(__file__).parent / "frontend"), cache_headers=False),
+        ])
+        # Always loaded (a few kB): the card is then in "Add card" for whoever wants it.
+        add_extra_js_url(hass, CARD_URL)
         hass.data[f"{DOMAIN}_view"] = True
     coordinator = VicoCoordinator(hass, entry, api)
     await coordinator.async_config_entry_first_refresh()
@@ -75,6 +92,15 @@ async def async_setup_entry(hass: HomeAssistant, entry: VicoConfigEntry) -> bool
 
     entry.async_on_unload(coordinator.async_add_listener(_sync_archive))
     _sync_archive()
+
+    async def _options_updated(hass: HomeAssistant, entry: VicoConfigEntry) -> None:
+        # The camera reads the options at every live; the archive is updated here.
+        archive.days = int(entry.options.get(CONF_RETENTION_DAYS, DEFAULT_RETENTION_DAYS))
+        archive.types = recorded_types(entry.options)
+        await archive.async_prune()
+        _sync_archive()
+
+    entry.async_on_unload(entry.add_update_listener(_options_updated))
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
 
     # Instant updates via the app's push channel; polling keeps working if this fails.

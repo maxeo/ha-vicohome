@@ -57,13 +57,13 @@
         "state_attributes": {
           "event_type": {
             "state": {
-              "ring": "Suonato",
+              "ring": "Campanello",
               "person": "Persona",
               "vehicle": "Veicolo",
               "pet": "Animale",
               "package": "Pacco",
               "motion": "Movimento",
-              "live": "Live registrata"
+              "live": "Camera avviata"
             }
           }
         }
@@ -80,7 +80,7 @@
           "retention_days": "Conservazione"
         },
         "data_description": {
-          "record": "Gli eventi vengono scaricati dal cloud circa un minuto dopo la fine. Le live con il microfono acceso non vengono registrate. Senza \"Live aperte\" la live va diretta dal campanello al browser.",
+          "record": "Gli eventi vengono scaricati dal cloud circa un minuto dopo la fine. Le live con il microfono acceso non vengono registrate. Senza \"Camera avviata\" la live va diretta dal campanello al browser.",
           "retention_days": "Le registrazioni più vecchie vengono cancellate. Riducendo il periodo, quelle già oltre il limite vengono cancellate subito. Con \"Per sempre\" restano finché non le cancelli dalla cartella config/vicohome."
         }
       },
@@ -110,13 +110,13 @@
     },
     "record": {
       "options": {
-        "ring": "Campanello suonato",
+        "ring": "Campanello",
         "person": "Persona",
         "vehicle": "Veicolo",
         "pet": "Animale",
         "package": "Pacco",
-        "motion": "Altri movimenti",
-        "live": "Live aperte da Home Assistant"
+        "motion": "Movimento",
+        "live": "Camera avviata"
       }
     }
   }

@@ -8,7 +8,7 @@ from typing import Any
 import aiohttp
 import voluptuous as vol
 
-from homeassistant.config_entries import ConfigEntry, ConfigFlow, ConfigFlowResult, OptionsFlowWithReload
+from homeassistant.config_entries import ConfigEntry, ConfigFlow, ConfigFlowResult, OptionsFlow
 from homeassistant.const import CONF_EMAIL, CONF_PASSWORD
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.core import callback
@@ -127,8 +127,12 @@ OPTIONS_SCHEMA = vol.Schema({
 })
 
 
-class VicoOptionsFlow(OptionsFlowWithReload):
-    """Recording options: what to keep on the HA host and for how long."""
+class VicoOptionsFlow(OptionsFlow):
+    """Recording options: what to keep on the HA host and for how long.
+
+    Applied on the fly by an update listener (no reload, so the entities never go
+    unavailable and the event entity does not log its restored state again).
+    """
 
     _pending: dict[str, Any]
 
