@@ -2,9 +2,6 @@
 
 from __future__ import annotations
 
-from datetime import timedelta
-import time
-
 from homeassistant.components.media_player import MediaClass, MediaType
 from homeassistant.components.media_source import (
     BrowseMediaSource,
@@ -13,19 +10,13 @@ from homeassistant.components.media_source import (
     PlayMedia,
     Unresolvable,
 )
-from homeassistant.components.http.auth import async_sign_path
 from homeassistant.core import HomeAssistant
 from homeassistant.util import dt as dt_util
 
-from .api import VicoError
 from .clip_view import archive_url, clip_url
+from .clips import async_list_clips
 from .const import DOMAIN
 from .coordinator import VicoCoordinator
-from .events import TYPE_LABEL_IT, event_title
-
-BROWSE_LIMIT = 60
-THUMB_TTL = timedelta(hours=1)
-
 
 async def async_get_media_source(hass: HomeAssistant) -> MediaSource:
     return VicoMediaSource(hass)
@@ -92,49 +83,21 @@ class VicoMediaSource(MediaSource):
     async def _camera(self, entry_id: str, serial: str) -> BrowseMediaSource:
         coord = self._coordinator(entry_id)
         cam = (coord.data or {}).get(serial)
-        archive = coord.archive
-        days = archive.days if archive else 7
-        cloud_days = min(days or 30, 30)  # the cloud keeps far less than a long local archive
-        items: dict[str, tuple[float, BrowseMediaSource]] = {}
-        now = int(time.time())
-        try:
-            events = await coord.api.library([serial], start=now - cloud_days * 86400, end=now, limit=BROWSE_LIMIT)
-        except VicoError:
-            events = []  # cloud down: the local archive is still there
-        for ev in events:
-            if not ev.get("traceId"):
-                continue
-            items[ev["traceId"]] = (ev.get("timestamp") and float(ev["timestamp"]) or 0, BrowseMediaSource(
+        days = coord.archive.days if coord.archive else 7
+        children = []
+        for clip in await async_list_clips(self.hass, coord, entry_id, serial):
+            when = dt_util.as_local(dt_util.utc_from_timestamp(clip.ts)).strftime("%d/%m %H:%M:%S") if clip.ts else "?"
+            secs = f" ({clip.duration:.0f} s)" if clip.duration else ""
+            children.append(BrowseMediaSource(
                 domain=DOMAIN,
-                identifier=f"{entry_id}/{serial}/{ev['traceId']}",
+                identifier=f"{entry_id}/{serial}/{clip.id}",
                 media_class=MediaClass.VIDEO,
                 media_content_type=MediaType.VIDEO,
-                title=event_title(ev) + ("" if archive and ev["traceId"] in archive.clips else " ☁"),
-                can_play=bool(ev.get("videoUrl")),
+                title=f"{when} · {clip.label}{secs}" + ("" if clip.archived else " ☁"),
+                can_play=clip.playable,
                 can_expand=False,
-                thumbnail=ev.get("imageUrl"),
+                thumbnail=clip.thumbnail,
             ))
-        for clip in archive.for_camera(serial) if archive else []:
-            thumb = None
-            if clip.image:
-                thumb = async_sign_path(self.hass, archive_url(entry_id, clip.image), THUMB_TTL)
-            when = dt_util.as_local(dt_util.utc_from_timestamp(clip.ts)).strftime("%d/%m %H:%M:%S")
-            label = "Live registrata" if clip.kind == "live" else TYPE_LABEL_IT.get(clip.kind, clip.kind)
-            secs = f" ({clip.period:.0f} s)" if clip.period else ""
-            items[clip.trace_id] = (clip.ts, BrowseMediaSource(
-                domain=DOMAIN,
-                identifier=f"{entry_id}/{serial}/{clip.trace_id}",
-                media_class=MediaClass.VIDEO,
-                media_content_type=MediaType.VIDEO,
-                title=f"{when} · {label}{secs}",
-                can_play=True,
-                can_expand=False,
-                thumbnail=thumb,
-            ))
-        # Cloud timestamps may be in ms: normalise before sorting.
-        children = [b for _, b in sorted(items.values(), key=lambda t: t[0] / 1000 if t[0] > 1e12 else t[0], reverse=True)]
-        if not children and not events and archive is None:
-            raise Unresolvable("No recordings")
         name = cam.device.get("deviceName") if cam else serial
         return BrowseMediaSource(
             domain=DOMAIN, identifier=f"{entry_id}/{serial}", media_class=MediaClass.DIRECTORY,
