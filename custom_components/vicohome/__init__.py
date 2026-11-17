@@ -12,17 +12,16 @@ from .api import VicoApi
 from .archive import VicoArchive
 from .clip_view import VicoArchiveView, VicoClipView
 from .const import (
-    CONF_ARCHIVE_EVENTS,
     CONF_COUNTRY,
     CONF_LANGUAGE,
     CONF_REGION,
     CONF_RETENTION_DAYS,
-    DEFAULT_ARCHIVE_EVENTS,
     DEFAULT_COUNTRY,
     DEFAULT_LANGUAGE,
     DEFAULT_REGION,
     DEFAULT_RETENTION_DAYS,
     DOMAIN,
+    recorded_types,
 )
 from .coordinator import VicoConfigEntry, VicoCoordinator
 from .push import VicoPush
@@ -63,7 +62,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: VicoConfigEntry) -> bool
     archive = VicoArchive(
         hass, entry.entry_id, api.session,
         days=int(entry.options.get(CONF_RETENTION_DAYS, DEFAULT_RETENTION_DAYS)),
-        archive_events=entry.options.get(CONF_ARCHIVE_EVENTS, DEFAULT_ARCHIVE_EVENTS),
+        types=recorded_types(entry.options),
     )
     await archive.async_load()
     coordinator.archive = archive

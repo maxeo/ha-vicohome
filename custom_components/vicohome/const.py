@@ -14,13 +14,20 @@ DEFAULT_LANGUAGE = "it"
 REGIONS = ["eu", "us"]
 
 # Options (Configure button of the integration).
+CONF_RECORD = "record"
+CONF_RETENTION_DAYS = "retention_days"
+# What can be kept locally: the event types of the cloud library plus the live views.
+RECORD_CHOICES = ["ring", "person", "vehicle", "pet", "package", "motion", "live"]
+DEFAULT_RECORD = RECORD_CHOICES
+# Options of version 0.4.0 (two switches), still read as a fallback.
 CONF_ARCHIVE_EVENTS = "archive_events"
 CONF_RECORD_LIVE = "record_live"
-CONF_RETENTION_DAYS = "retention_days"
-DEFAULT_ARCHIVE_EVENTS = True
-DEFAULT_RECORD_LIVE = True
 DEFAULT_RETENTION_DAYS = 7
-MAX_RETENTION_DAYS = 90
+# Choices offered in the options; 0 = never delete (manual cleanup).
+RETENTION_CHOICES = [1, 3, 7, 14, 30, 90, 180, 365, 0]
+# Extra choice that asks for a number of days in a second step.
+RETENTION_CUSTOM = "custom"
+MAX_CUSTOM_DAYS = 3650
 
 # Cloud polling. Reading the device list, cover images and the event library does not
 # wake battery cameras.
@@ -47,3 +54,15 @@ FCM_API_KEY = base64.b64decode("QUl6YVN5RE1FaHI5cFliUE9ja2NiYkIyNnZwN2JsR0VoNW45
 FCM_BUNDLE_ID = "com.smartaddx.vicohome"
 # msgType the app sends to /user/setusertoken for FCM tokens (A4x push manager).
 PUSH_MSG_TYPE_FCM = "101"
+
+
+def recorded_types(options) -> set[str]:  # noqa: ANN001
+    """What the user chose to keep (falls back to the 0.4.0 switches)."""
+    if CONF_RECORD in options:
+        return set(options[CONF_RECORD])
+    chosen = set(RECORD_CHOICES)
+    if not options.get(CONF_ARCHIVE_EVENTS, True):
+        chosen -= set(RECORD_CHOICES[:-1])
+    if not options.get(CONF_RECORD_LIVE, True):
+        chosen.discard("live")
+    return chosen

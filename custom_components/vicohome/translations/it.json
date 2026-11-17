@@ -74,17 +74,49 @@
     "step": {
       "init": {
         "title": "Registrazioni",
-        "description": "Cosa conservare sul server di Home Assistant (cartella config/vicohome). Le registrazioni più vecchie dei giorni indicati vengono cancellate.",
+        "description": "Cosa conservare sul server di Home Assistant (cartella config/vicohome).",
         "data": {
-          "archive_events": "Salva le clip degli eventi",
-          "record_live": "Registra le live",
-          "retention_days": "Giorni di conservazione"
+          "record": "Cosa registrare",
+          "retention_days": "Conservazione"
         },
         "data_description": {
-          "archive_events": "Scarica dal cloud ogni evento (suonato, persona, movimento) circa un minuto dopo la fine.",
-          "record_live": "Salva ciò che guardi in diretta. Con il microfono acceso la live non viene registrata.",
-          "retention_days": "Riducendo il numero, le registrazioni più vecchie vengono cancellate subito."
+          "record": "Gli eventi vengono scaricati dal cloud circa un minuto dopo la fine. Le live con il microfono acceso non vengono registrate. Senza \"Live aperte\" la live va diretta dal campanello al browser.",
+          "retention_days": "Le registrazioni più vecchie vengono cancellate. Riducendo il periodo, quelle già oltre il limite vengono cancellate subito. Con \"Per sempre\" restano finché non le cancelli dalla cartella config/vicohome."
         }
+      },
+      "custom_days": {
+        "title": "Conservazione personalizzata",
+        "description": "Per quanti giorni tenere le registrazioni.",
+        "data": {
+          "retention_days": "Giorni"
+        }
+      }
+    }
+  },
+  "selector": {
+    "retention": {
+      "options": {
+        "1": "1 giorno",
+        "3": "3 giorni",
+        "7": "7 giorni",
+        "14": "14 giorni",
+        "30": "1 mese",
+        "90": "3 mesi",
+        "180": "6 mesi",
+        "365": "1 anno",
+        "0": "Per sempre (cancellazione manuale)",
+        "custom": "Personalizzato…"
+      }
+    },
+    "record": {
+      "options": {
+        "ring": "Campanello suonato",
+        "person": "Persona",
+        "vehicle": "Veicolo",
+        "pet": "Animale",
+        "package": "Pacco",
+        "motion": "Altri movimenti",
+        "live": "Live aperte da Home Assistant"
       }
     }
   }

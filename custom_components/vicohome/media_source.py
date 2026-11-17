@@ -94,10 +94,11 @@ class VicoMediaSource(MediaSource):
         cam = (coord.data or {}).get(serial)
         archive = coord.archive
         days = archive.days if archive else 7
+        cloud_days = min(days or 30, 30)  # the cloud keeps far less than a long local archive
         items: dict[str, tuple[float, BrowseMediaSource]] = {}
         now = int(time.time())
         try:
-            events = await coord.api.library([serial], start=now - days * 86400, end=now, limit=BROWSE_LIMIT)
+            events = await coord.api.library([serial], start=now - cloud_days * 86400, end=now, limit=BROWSE_LIMIT)
         except VicoError:
             events = []  # cloud down: the local archive is still there
         for ev in events:
@@ -138,6 +139,6 @@ class VicoMediaSource(MediaSource):
         return BrowseMediaSource(
             domain=DOMAIN, identifier=f"{entry_id}/{serial}", media_class=MediaClass.DIRECTORY,
             media_content_type=MediaType.VIDEO,
-            title=f"{name} (ultimi {days} giorni)",
+            title=f"{name} (ultimi {days} giorni)" if days else f"{name} (archivio completo)",
             can_play=False, can_expand=True, children=children, children_media_class=MediaClass.VIDEO,
         )

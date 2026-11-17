@@ -74,17 +74,49 @@
     "step": {
       "init": {
         "title": "Recordings",
-        "description": "What to keep on the Home Assistant host (config/vicohome folder). Recordings older than the given days are deleted.",
+        "description": "What to keep on the Home Assistant host (config/vicohome folder).",
         "data": {
-          "archive_events": "Save event clips",
-          "record_live": "Record live views",
-          "retention_days": "Days to keep"
+          "record": "What to record",
+          "retention_days": "Keep recordings for"
         },
         "data_description": {
-          "archive_events": "Download every event (ring, person, motion) from the cloud about a minute after it ends.",
-          "record_live": "Save what you watch live. Live views with the microphone on are not recorded.",
-          "retention_days": "Lowering it deletes older recordings right away."
+          "record": "Events are downloaded from the cloud about a minute after they end. Live views with the microphone on are not recorded. Without \"Live views\" the live goes straight from the camera to the browser.",
+          "retention_days": "Older recordings are deleted. Shortening it deletes the ones already past the limit right away. With \"Forever\" they stay until you delete them from the config/vicohome folder."
         }
+      },
+      "custom_days": {
+        "title": "Custom retention",
+        "description": "How many days to keep recordings.",
+        "data": {
+          "retention_days": "Days"
+        }
+      }
+    }
+  },
+  "selector": {
+    "retention": {
+      "options": {
+        "1": "1 day",
+        "3": "3 days",
+        "7": "7 days",
+        "14": "14 days",
+        "30": "1 month",
+        "90": "3 months",
+        "180": "6 months",
+        "365": "1 year",
+        "0": "Forever (manual cleanup)",
+        "custom": "Custom…"
+      }
+    },
+    "record": {
+      "options": {
+        "ring": "Doorbell rings",
+        "person": "Person",
+        "vehicle": "Vehicle",
+        "pet": "Pet",
+        "package": "Package",
+        "motion": "Other motion",
+        "live": "Live views opened in Home Assistant"
       }
     }
   }

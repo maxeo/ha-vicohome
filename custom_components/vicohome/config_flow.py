@@ -13,7 +13,6 @@ from homeassistant.const import CONF_EMAIL, CONF_PASSWORD
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.core import callback
 from homeassistant.helpers.selector import (
-    BooleanSelector,
     NumberSelector,
     NumberSelectorConfig,
     NumberSelectorMode,
@@ -26,13 +25,14 @@ from homeassistant.helpers.selector import (
 
 from .api import VicoApi, VicoAuthError, VicoError
 from .const import (
-    CONF_ARCHIVE_EVENTS,
-    CONF_RECORD_LIVE,
+    CONF_RECORD,
     CONF_RETENTION_DAYS,
-    DEFAULT_ARCHIVE_EVENTS,
-    DEFAULT_RECORD_LIVE,
     DEFAULT_RETENTION_DAYS,
-    MAX_RETENTION_DAYS,
+    RECORD_CHOICES,
+    MAX_CUSTOM_DAYS,
+    RETENTION_CHOICES,
+    RETENTION_CUSTOM,
+    recorded_types,
     CONF_COUNTRY,
     CONF_LANGUAGE,
     CONF_REGION,
@@ -118,10 +118,11 @@ class VicoConfigFlow(ConfigFlow, domain=DOMAIN):
 
 
 OPTIONS_SCHEMA = vol.Schema({
-    vol.Required(CONF_ARCHIVE_EVENTS, default=DEFAULT_ARCHIVE_EVENTS): BooleanSelector(),
-    vol.Required(CONF_RECORD_LIVE, default=DEFAULT_RECORD_LIVE): BooleanSelector(),
-    vol.Required(CONF_RETENTION_DAYS, default=DEFAULT_RETENTION_DAYS): NumberSelector(NumberSelectorConfig(
-        min=1, max=MAX_RETENTION_DAYS, step=1, mode=NumberSelectorMode.BOX,
+    vol.Optional(CONF_RECORD): SelectSelector(SelectSelectorConfig(
+        options=RECORD_CHOICES, multiple=True, translation_key="record",
+    )),
+    vol.Required(CONF_RETENTION_DAYS, default=str(DEFAULT_RETENTION_DAYS)): SelectSelector(SelectSelectorConfig(
+        options=[str(d) for d in RETENTION_CHOICES] + [RETENTION_CUSTOM], translation_key="retention",
     )),
 })
 
@@ -129,11 +130,40 @@ OPTIONS_SCHEMA = vol.Schema({
 class VicoOptionsFlow(OptionsFlowWithReload):
     """Recording options: what to keep on the HA host and for how long."""
 
+    _pending: dict[str, Any]
+
     async def async_step_init(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
         if user_input is not None:
+            user_input.setdefault(CONF_RECORD, [])
+            if user_input[CONF_RETENTION_DAYS] == RETENTION_CUSTOM:
+                self._pending = user_input
+                return await self.async_step_custom_days()
             user_input[CONF_RETENTION_DAYS] = int(user_input[CONF_RETENTION_DAYS])
             return self.async_create_entry(data=user_input)
+        current = dict(self.config_entry.options)
+        current[CONF_RECORD] = [t for t in RECORD_CHOICES if t in recorded_types(current)]
+        current.pop("archive_events", None)
+        current.pop("record_live", None)
+        if CONF_RETENTION_DAYS in current:
+            days = int(current[CONF_RETENTION_DAYS])
+            current[CONF_RETENTION_DAYS] = str(days) if days in RETENTION_CHOICES else RETENTION_CUSTOM
         return self.async_show_form(
             step_id="init",
-            data_schema=self.add_suggested_values_to_schema(OPTIONS_SCHEMA, self.config_entry.options),
+            data_schema=self.add_suggested_values_to_schema(OPTIONS_SCHEMA, current),
+        )
+
+    async def async_step_custom_days(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
+        """Second step when "Custom" is chosen: how many days to keep."""
+        if user_input is not None:
+            return self.async_create_entry(
+                data={**self._pending, CONF_RETENTION_DAYS: int(user_input[CONF_RETENTION_DAYS])}
+            )
+        days = int(self.config_entry.options.get(CONF_RETENTION_DAYS, DEFAULT_RETENTION_DAYS)) or DEFAULT_RETENTION_DAYS
+        return self.async_show_form(
+            step_id="custom_days",
+            data_schema=vol.Schema({
+                vol.Required(CONF_RETENTION_DAYS, default=days): NumberSelector(NumberSelectorConfig(
+                    min=1, max=MAX_CUSTOM_DAYS, step=1, mode=NumberSelectorMode.BOX,
+                )),
+            }),
         )

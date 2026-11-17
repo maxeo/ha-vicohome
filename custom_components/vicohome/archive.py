@@ -54,11 +54,11 @@ class VicoArchive:
 
     def __init__(
         self, hass: HomeAssistant, entry_id: str, session: aiohttp.ClientSession,
-        days: int, archive_events: bool,
+        days: int, types: set[str],
     ) -> None:
         self.hass = hass
         self.days = days
-        self.archive_events = archive_events
+        self.types = types
         self.dir = Path(hass.config.path("vicohome", entry_id))
         self._session = session
         self._index_file = self.dir / "index.json"
@@ -102,7 +102,7 @@ class VicoArchive:
     @callback
     def async_sync(self, events: list[dict]) -> None:
         """Queue the finished recordings that are not archived yet."""
-        if not self.archive_events:
+        if not self.types - {"live"}:
             return
         now = time.time()
         for ev in events:
@@ -111,8 +111,10 @@ class VicoArchive:
                 continue
             if self._attempts.get(trace, 0) >= MAX_ATTEMPTS:
                 continue
+            if event_type(ev) not in self.types:
+                continue
             start = ts_seconds(ev.get("timestamp")) or now
-            if now - start > self.days * 86400:
+            if self.days and now - start > self.days * 86400:
                 continue
             period = ev.get("period")
             if isinstance(period, (int, float)) and period > 0:
@@ -145,8 +147,9 @@ class VicoArchive:
         await self._save_index()
 
     async def async_prune(self) -> None:
+        # days == 0: keep everything (manual cleanup).
         limit = time.time() - self.days * 86400
-        old = [c for c in self.clips.values() if c.ts < limit]
+        old = [c for c in self.clips.values() if c.ts < limit] if self.days else []
 
         def remove() -> None:
             for clip in old:

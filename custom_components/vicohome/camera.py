@@ -21,7 +21,7 @@ from homeassistant.components.camera import (
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 
-from .const import CONF_RECORD_LIVE, DATA_CHANNEL, DEFAULT_RECORD_LIVE, LIVE_MAX_S
+from .const import DATA_CHANNEL, LIVE_MAX_S, recorded_types
 from .coordinator import VicoConfigEntry, VicoCoordinator
 from .entity import VicoEntity
 from .relay import RELAY_KEY, BrowserSession, LiveRecorder, offer_wants_talk
@@ -102,7 +102,7 @@ class VicoCamera(VicoEntity, Camera):
         relay = self.hass.data.get(RELAY_KEY)
         # Talking (microphone on) goes straight to the camera; plain viewing goes through
         # the relay so it can be recorded.
-        record = self.coordinator.config_entry.options.get(CONF_RECORD_LIVE, DEFAULT_RECORD_LIVE)
+        record = "live" in recorded_types(self.coordinator.config_entry.options)
         if relay and record and not offer_wants_talk(offer_sdp):
             try:
                 if await relay.async_ensure():

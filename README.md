@@ -63,6 +63,15 @@ dall'app. Usare un **account secondario** e condividergli le camere dall'app pri
 Copiare `custom_components/vicohome` in `/config/custom_components/`, riavviare HA,
 poi Impostazioni → Dispositivi e servizi → Aggiungi integrazione → **VicoHome**.
 
+**Opzioni** (⚙ Configura sull'integrazione):
+- **Cosa registrare**: campanello suonato, persona, veicolo, animale, pacco, altri movimenti, live aperte da HA
+  (scelta multipla; senza "live" la live va diretta camera → browser, senza go2rtc);
+- **Conservazione**: da 1 giorno a 1 anno, "Per sempre" (cancellazione manuale da `config/vicohome`) o
+  "Personalizzato…" (secondo passaggio con il numero di giorni, fino a 3650).
+
+L'icona è in `custom_components/vicohome/brand/` (HA la usa per le integrazioni custom); il sorgente
+vettoriale è `docs/icon.svg`.
+
 Per capire i campi di un modello nuovo: menu dell'integrazione → **Scarica diagnostica**
 (dati del cloud con email, token, IP, MAC e URL oscurati).
 
