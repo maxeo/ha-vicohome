@@ -1,0 +1,123 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "description": "Verwende ein zweites VicoHome-Konto, für das die Kameras freigegeben sind: Jede Anmeldung meldet dasselbe Konto in der App ab.",
+        "data": {
+          "email": "E-Mail",
+          "password": "Passwort",
+          "region": "Cloud-Region",
+          "country": "Ländercode",
+          "language": "Sprache"
+        }
+      },
+      "reauth_confirm": {
+        "description": "Gib das Passwort für {email} erneut ein.",
+        "data": {
+          "password": "Passwort"
+        }
+      }
+    },
+    "error": {
+      "invalid_auth": "Ungültige E-Mail oder ungültiges Passwort",
+      "cannot_connect": "VicoHome-Cloud nicht erreichbar",
+      "no_devices": "Keine Kameras in diesem Konto. Gib sie zuerst im Hauptkonto frei."
+    },
+    "abort": {
+      "already_configured": "Dieses Konto ist bereits eingerichtet",
+      "reauth_successful": "Erneute Anmeldung erfolgreich"
+    }
+  },
+  "entity": {
+    "sensor": {
+      "signal": {
+        "name": "WLAN-Signal"
+      },
+      "ip": {
+        "name": "IP-Adresse"
+      },
+      "wifi": {
+        "name": "WLAN-Netzwerk"
+      },
+      "last_event": {
+        "name": "Letztes Ereignis"
+      }
+    },
+    "binary_sensor": {
+      "recent_event": {
+        "name": "Aktuelles Ereignis"
+      },
+      "awake": {
+        "name": "Wach"
+      }
+    },
+    "event": {
+      "activity": {
+        "name": "Aktivität",
+        "state_attributes": {
+          "event_type": {
+            "state": {
+              "ring": "Türklingel",
+              "person": "Person",
+              "vehicle": "Fahrzeug",
+              "pet": "Haustier",
+              "package": "Paket",
+              "motion": "Bewegung",
+              "live": "Kamera gestartet"
+            }
+          }
+        }
+      }
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Aufnahmen",
+        "description": "Was auf dem Home-Assistant-Server gespeichert wird (Ordner config/vicohome).",
+        "data": {
+          "record": "Was aufnehmen",
+          "retention_days": "Aufnahmen behalten für"
+        },
+        "data_description": {
+          "record": "Ereignisse werden etwa eine Minute nach ihrem Ende aus der Cloud geladen. Live-Ansichten mit eingeschaltetem Mikrofon werden nicht aufgenommen. Ohne \"Kamera gestartet\" geht die Live-Ansicht direkt von der Kamera zum Browser.",
+          "retention_days": "Ältere Aufnahmen werden gelöscht. Beim Verkürzen werden die bereits älteren sofort gelöscht. Mit \"Für immer\" bleiben sie, bis du sie aus dem Ordner config/vicohome löschst."
+        }
+      },
+      "custom_days": {
+        "title": "Eigene Aufbewahrung",
+        "description": "Wie viele Tage die Aufnahmen behalten werden.",
+        "data": {
+          "retention_days": "Tage"
+        }
+      }
+    }
+  },
+  "selector": {
+    "retention": {
+      "options": {
+        "1": "1 Tag",
+        "3": "3 Tage",
+        "7": "7 Tage",
+        "14": "14 Tage",
+        "30": "1 Monat",
+        "90": "3 Monate",
+        "180": "6 Monate",
+        "365": "1 Jahr",
+        "0": "Für immer (manuell löschen)",
+        "custom": "Eigene…"
+      }
+    },
+    "record": {
+      "options": {
+        "ring": "Türklingel",
+        "person": "Person",
+        "vehicle": "Fahrzeug",
+        "pet": "Haustier",
+        "package": "Paket",
+        "motion": "Bewegung",
+        "live": "Kamera gestartet"
+      }
+    }
+  }
+}

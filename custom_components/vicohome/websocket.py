@@ -29,12 +29,15 @@ def async_setup_websocket(hass: HomeAssistant) -> None:
     vol.Optional("end"): vol.Coerce(float),
     vol.Optional("before"): vol.Coerce(float),
     vol.Optional("kinds"): [str],
+    vol.Optional("language"): str,
 })
 @websocket_api.async_response
 async def ws_events(hass: HomeAssistant, connection: websocket_api.ActiveConnection, msg: dict[str, Any]) -> None:
     """Recordings of one camera (or of all cameras), newest first."""
     start, end, before = msg.get("start"), msg.get("end"), msg.get("before")
     kinds = set(msg["kinds"]) if msg.get("kinds") else None
+    # The user's language when set in their profile, else the server's.
+    language = msg.get("language") or hass.config.language
     items: list[dict] = []
     for entry in hass.config_entries.async_loaded_entries(DOMAIN):
         coord = entry.runtime_data
@@ -52,7 +55,7 @@ async def ws_events(hass: HomeAssistant, connection: websocket_api.ActiveConnect
                     "time": dt_util.utc_from_timestamp(clip.ts).isoformat() if clip.ts else None,
                     "ts": clip.ts,
                     "kind": clip.kind,
-                    "label": clip.label,
+                    "label": clip.label(language),
                     "duration": clip.duration,
                     "archived": clip.archived,
                     "thumbnail": clip.thumbnail,

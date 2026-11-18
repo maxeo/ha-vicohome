@@ -1,26 +1,72 @@
 // VicoHome events card: recordings with their photo, as a compact list grouped by day or as a grid;
-// a tap opens the video. Filters by day (calendar) and type, "Carica altri" pages back in time.
+// a tap opens the video. Filters by period and type, "load more" pages back in time.
+// Texts in Italian, English and German, from the user's Home Assistant language (English otherwise).
 // The header button switches layout (remembered in this browser).
 // Data from the websocket command "vicohome/events" (local archive + cloud items).
 
+const I18N = {
+  it: {
+    k_ring: "Campanello", k_person: "Persona", k_vehicle: "Veicolo", k_pet: "Animale",
+    k_package: "Pacco", k_motion: "Movimento", k_live: "Camera avviata",
+    p_all: "Tutto il periodo", p_today: "Oggi", p_yesterday: "Ieri", p_24h: "Ultime 24 ore",
+    p_7d: "Ultimi 7 giorni", p_30d: "Ultimi 30 giorni", p_day: "Giorno…", p_range: "Intervallo…",
+    today: "Oggi", yesterday: "Ieri", all_types: "Tutti i tipi", from: "Dal", to: "Al",
+    cloud_only: "Solo nel cloud", as_list: "Mostra come elenco", as_grid: "Mostra come griglia",
+    title: "Eventi", error: "Impossibile leggere gli eventi:", loading: "Caricamento…",
+    none: "Nessuna registrazione.", none_filtered: "Nessuna registrazione con questi filtri.",
+    more: "Carica altri", close: "Chiudi", card_name: "VicoHome: eventi",
+    card_desc: "Eventi e live registrate con la loro foto; filtri per periodo e tipo, toccandone uno si apre il video.",
+  },
+  en: {
+    k_ring: "Doorbell", k_person: "Person", k_vehicle: "Vehicle", k_pet: "Pet",
+    k_package: "Package", k_motion: "Motion", k_live: "Camera started",
+    p_all: "All time", p_today: "Today", p_yesterday: "Yesterday", p_24h: "Last 24 hours",
+    p_7d: "Last 7 days", p_30d: "Last 30 days", p_day: "Day…", p_range: "Range…",
+    today: "Today", yesterday: "Yesterday", all_types: "All types", from: "From", to: "To",
+    cloud_only: "Cloud only", as_list: "Show as list", as_grid: "Show as grid",
+    title: "Events", error: "Cannot read the events:", loading: "Loading…",
+    none: "No recordings.", none_filtered: "No recordings match these filters.",
+    more: "Load more", close: "Close", card_name: "VicoHome: events",
+    card_desc: "Events and recorded live views with their photo; filter by period and type, tap one to play the video.",
+  },
+  de: {
+    k_ring: "Türklingel", k_person: "Person", k_vehicle: "Fahrzeug", k_pet: "Haustier",
+    k_package: "Paket", k_motion: "Bewegung", k_live: "Kamera gestartet",
+    p_all: "Gesamter Zeitraum", p_today: "Heute", p_yesterday: "Gestern", p_24h: "Letzte 24 Stunden",
+    p_7d: "Letzte 7 Tage", p_30d: "Letzte 30 Tage", p_day: "Tag…", p_range: "Zeitraum…",
+    today: "Heute", yesterday: "Gestern", all_types: "Alle Typen", from: "Von", to: "Bis",
+    cloud_only: "Nur in der Cloud", as_list: "Als Liste anzeigen", as_grid: "Als Raster anzeigen",
+    title: "Ereignisse", error: "Ereignisse können nicht gelesen werden:", loading: "Wird geladen…",
+    none: "Keine Aufnahmen.", none_filtered: "Keine Aufnahmen für diese Filter.",
+    more: "Mehr laden", close: "Schließen", card_name: "VicoHome: Ereignisse",
+    card_desc: "Ereignisse und aufgenommene Live-Ansichten mit Foto; Filter nach Zeitraum und Typ, Antippen spielt das Video ab.",
+  },
+};
+
+function pickLang(code) {
+  const c = String(code || navigator.language || "en").split("-")[0].toLowerCase();
+  return I18N[c] ? c : "en";
+}
+
+// [type, label key, color, icon]
 const KINDS = [
-  ["ring", "Campanello", "#2e7d32", "mdi:bell-ring"],
-  ["person", "Persona", "#1565c0", "mdi:account"],
-  ["vehicle", "Veicolo", "#00838f", "mdi:car"],
-  ["pet", "Animale", "#ad1457", "mdi:paw"],
-  ["package", "Pacco", "#6d4c41", "mdi:package-variant-closed"],
-  ["motion", "Movimento", "#546e7a", "mdi:motion-sensor"],
-  ["live", "Camera avviata", "#c2702a", "mdi:video"],
+  ["ring", "k_ring", "#2e7d32", "mdi:bell-ring"],
+  ["person", "k_person", "#1565c0", "mdi:account"],
+  ["vehicle", "k_vehicle", "#00838f", "mdi:car"],
+  ["pet", "k_pet", "#ad1457", "mdi:paw"],
+  ["package", "k_package", "#6d4c41", "mdi:package-variant-closed"],
+  ["motion", "k_motion", "#546e7a", "mdi:motion-sensor"],
+  ["live", "k_live", "#c2702a", "mdi:video"],
 ];
 const PERIODS = [
-  ["", "Tutto il periodo", "mdi:calendar-blank"],
-  ["today", "Oggi", "mdi:calendar-today"],
-  ["yesterday", "Ieri", "mdi:calendar-arrow-left"],
-  ["24h", "Ultime 24 ore", "mdi:clock-outline"],
-  ["7d", "Ultimi 7 giorni", "mdi:calendar-week"],
-  ["30d", "Ultimi 30 giorni", "mdi:calendar-month"],
-  ["day", "Giorno…", "mdi:calendar-cursor"],
-  ["range", "Intervallo…", "mdi:calendar-range"],
+  ["", "p_all", "mdi:calendar-blank"],
+  ["today", "p_today", "mdi:calendar-today"],
+  ["yesterday", "p_yesterday", "mdi:calendar-arrow-left"],
+  ["24h", "p_24h", "mdi:clock-outline"],
+  ["7d", "p_7d", "mdi:calendar-week"],
+  ["30d", "p_30d", "mdi:calendar-month"],
+  ["day", "p_day", "mdi:calendar-cursor"],
+  ["range", "p_range", "mdi:calendar-range"],
 ];
 const COLOR = Object.fromEntries(KINDS.map(([k, , c]) => [k, c]));
 const ICON = Object.fromEntries(KINDS.map(([k, , , i]) => [k, i]));
@@ -79,7 +125,7 @@ class VicoHomeEventsCard extends HTMLElement {
     const size = this._pageSize();
     const have = this._items ? this._items.length : 0;
     const want = mode === "refresh" ? Math.max(size, have) : size;
-    const msg = { type: "vicohome/events", limit: want + 1 };
+    const msg = { type: "vicohome/events", limit: want + 1, language: this._lang() };
     const serial = this._serial();
     if (serial) msg.serial = serial;
     if (this._kind) msg.kinds = [this._kind];
@@ -136,6 +182,14 @@ class VicoHomeEventsCard extends HTMLElement {
     return this._iso(new Date());
   }
 
+  _t(key) {
+    return (I18N[pickLang(this._lang())] || I18N.en)[key] ?? I18N.en[key] ?? key;
+  }
+
+  _kindLabel(kind) {
+    return this._t(`k_${kind}`);
+  }
+
   _lang() {
     return this._hass?.locale?.language || "it";
   }
@@ -149,8 +203,8 @@ class VicoHomeEventsCard extends HTMLElement {
     const today = new Date();
     const yesterday = new Date(today.getFullYear(), today.getMonth(), today.getDate() - 1);
     const full = d.toLocaleDateString(this._lang(), { day: "numeric", month: "long", year: "numeric" });
-    if (d.toDateString() === today.toDateString()) return `Oggi · ${full}`;
-    if (d.toDateString() === yesterday.toDateString()) return `Ieri · ${full}`;
+    if (d.toDateString() === today.toDateString()) return `${this._t("today")} · ${full}`;
+    if (d.toDateString() === yesterday.toDateString()) return `${this._t("yesterday")} · ${full}`;
     const wd = d.toLocaleDateString(this._lang(), { weekday: "long" });
     return `${wd.charAt(0).toUpperCase()}${wd.slice(1)} · ${full}`;
   }
@@ -158,12 +212,12 @@ class VicoHomeEventsCard extends HTMLElement {
   _short(iso) {
     const d = new Date(iso);
     const time = d.toLocaleTimeString(this._lang(), { hour: "2-digit", minute: "2-digit" });
-    if (d.toDateString() === new Date().toDateString()) return `Oggi ${time}`;
+    if (d.toDateString() === new Date().toDateString()) return `${this._t("today")} ${time}`;
     return `${d.toLocaleDateString(this._lang(), { day: "numeric", month: "short" })} ${time}`;
   }
 
   _badge(it) {
-    return `<span class="badge" style="background:${COLOR[it.kind] || COLOR.motion}">${this._esc(it.label)}</span>`;
+    return `<span class="badge" style="background:${COLOR[it.kind] || COLOR.motion}">${this._esc(this._kindLabel(it.kind))}</span>`;
   }
 
   _kicon(it) {
@@ -188,7 +242,7 @@ class VicoHomeEventsCard extends HTMLElement {
       const thumb = it.thumbnail ? `<img loading="lazy" src="${this._esc(it.thumbnail)}" alt="">` : "";
       const extra = this._extra(it);
       html += `<button class="row item" data-i="${i}" ${it.video ? "" : "disabled"}
-            title="${it.archived ? "" : "Solo nel cloud"}">
+            title="${it.archived ? "" : this._t("cloud_only")}">
           <span class="mini">${thumb}</span>
           ${this._kicon(it)}
           <span class="txt">
@@ -220,7 +274,7 @@ class VicoHomeEventsCard extends HTMLElement {
       html += `<button class="item cell" data-i="${i}" ${it.video ? "" : "disabled"}>
           ${thumb}
           <span class="tagpos">${this._kicon(it)}${this._badge(it)}</span>
-          ${it.archived ? "" : `<ha-icon class="cloud" icon="mdi:cloud-outline" title="Solo nel cloud"></ha-icon>`}
+          ${it.archived ? "" : `<ha-icon class="cloud" icon="mdi:cloud-outline" title="${this._t("cloud_only")}"></ha-icon>`}
           ${it.video ? `<ha-icon class="play" icon="mdi:play"></ha-icon>` : ""}
           <span class="shade">
             <span class="ctime">${this._esc(time)}</span>
@@ -268,42 +322,42 @@ class VicoHomeEventsCard extends HTMLElement {
     const kind = KINDS.find(([k]) => k === this._kind);
     return `<div class="tools" style="color-scheme:${dark ? "dark" : "light"}">
         <button class="pick period ${this._period ? "on" : ""}">
-          <ha-icon icon="${period[2]}"></ha-icon><span>${period[1].replace("…", "")}</span>
+          <ha-icon icon="${period[2]}"></ha-icon><span>${this._t(period[1]).replace("…", "")}</span>
           <ha-icon class="caret" icon="mdi:menu-down"></ha-icon></button>
         ${this._period === "day"
           ? `<label class="field"><input type="date" class="d1" value="${this._d1}" max="${max}"></label>`
           : ""}
         ${this._period === "range"
-          ? `<label class="field" title="Dal"><input type="date" class="d1" value="${this._d1}" max="${this._d2 || max}"></label>
+          ? `<label class="field" title="${this._t("from")}"><input type="date" class="d1" value="${this._d1}" max="${this._d2 || max}"></label>
              <span class="dash">–</span>
-             <label class="field" title="Al"><input type="date" class="d2" value="${this._d2}" min="${this._d1}" max="${max}"></label>`
+             <label class="field" title="${this._t("to")}"><input type="date" class="d2" value="${this._d2}" min="${this._d1}" max="${max}"></label>`
           : ""}
-        ${this._period ? `<button class="iconbtn clear" title="Tutto il periodo"><ha-icon icon="mdi:close"></ha-icon></button>` : ""}
+        ${this._period ? `<button class="iconbtn clear" title="${this._t("p_all")}"><ha-icon icon="mdi:close"></ha-icon></button>` : ""}
         <button class="pick kind kindf ${kind ? "on" : ""}">
           ${kind
             ? `<span class="dotico" style="background:${kind[2]}"><ha-icon icon="${kind[3]}"></ha-icon></span>`
             : `<ha-icon icon="mdi:filter-variant"></ha-icon>`}
-          <span>${kind ? kind[1] : "Tutti i tipi"}</span>
+          <span>${kind ? this._t(kind[1]) : this._t("all_types")}</span>
           <ha-icon class="caret" icon="mdi:menu-down"></ha-icon></button>
-        <button class="iconbtn switch" title="${this._layout === "grid" ? "Mostra come elenco" : "Mostra come griglia"}">
+        <button class="iconbtn switch" title="${this._layout === "grid" ? this._t("as_list") : this._t("as_grid")}">
           <ha-icon icon="${this._layout === "grid" ? "mdi:view-list" : "mdi:view-grid"}"></ha-icon></button>
       </div>`;
   }
 
   _render() {
     if (!this.shadowRoot || !this._config) return;
-    const title = this._config.title ?? "Eventi";
+    const title = this._config.title ?? this._t("title");
     let body;
     if (this._error) {
-      body = `<div class="msg">Impossibile leggere gli eventi: ${this._esc(this._error)}</div>`;
+      body = `<div class="msg">${this._t("error")} ${this._esc(this._error)}</div>`;
     } else if (!this._items) {
-      body = `<div class="msg">Caricamento…</div>`;
+      body = `<div class="msg">${this._t("loading")}</div>`;
     } else if (!this._items.length) {
-      body = `<div class="msg">${this._period || this._kind ? "Nessuna registrazione con questi filtri." : "Nessuna registrazione."}</div>`;
+      body = `<div class="msg">${this._t(this._period || this._kind ? "none_filtered" : "none")}</div>`;
     } else {
       body = this._layout === "list" ? this._listBody() : this._gridBody();
       if (this._more) {
-        body += `<button class="more" ${this._loading ? "disabled" : ""}>${this._loading ? "Caricamento…" : "Carica altri"}</button>`;
+        body += `<button class="more" ${this._loading ? "disabled" : ""}>${this._t(this._loading ? "loading" : "more")}</button>`;
       }
     }
     this.shadowRoot.innerHTML = `
@@ -406,7 +460,7 @@ class VicoHomeEventsCard extends HTMLElement {
     $(".period").addEventListener("click", (e) =>
       this._menu(
         e.currentTarget,
-        PERIODS.map(([v, l, i]) => ({ value: v, label: l, icon: i })),
+        PERIODS.map(([v, l, i]) => ({ value: v, label: this._t(l), icon: i })),
         this._period,
         (v) => this._setPeriod(v)
       )
@@ -422,8 +476,8 @@ class VicoHomeEventsCard extends HTMLElement {
     $(".kind").addEventListener("click", (e) =>
       this._menu(
         e.currentTarget,
-        [{ value: "", label: "Tutti i tipi", icon: "mdi:filter-variant-remove" }].concat(
-          KINDS.map(([k, l, c, i]) => ({ value: k, label: l, icon: i, color: c }))
+        [{ value: "", label: this._t("all_types"), icon: "mdi:filter-variant-remove" }].concat(
+          KINDS.map(([k, l, c, i]) => ({ value: k, label: this._t(l), icon: i, color: c }))
         ),
         this._kind,
         (v) => {
@@ -519,7 +573,7 @@ class VicoHomeEventsCard extends HTMLElement {
     modal.innerHTML = `<div class="box">
         <video controls autoplay playsinline src="${this._esc(item.video)}" poster="${this._esc(item.thumbnail || "")}"></video>
         <div class="bar"><span class="t">${this._kicon(item)}${this._badge(item)}<span>${this._esc(item.time ? this._short(item.time) : "")}${secs}</span></span>
-          <button class="close">Chiudi</button></div>
+          <button class="close">${this._t("close")}</button></div>
       </div>`;
     const close = () => {
       modal.querySelector("video")?.pause();
@@ -548,17 +602,20 @@ class VicoHomeEventsCard extends HTMLElement {
       (id) => id.startsWith("camera.") && hass.states[id].attributes.serial_number
     );
     const event = Object.keys(hass.states).find((id) => id.startsWith("event.") && id.includes("attivita"));
-    return { camera, event_entity: event, limit: 12, layout: "list", columns: 3, title: "Eventi" };
+    return { camera, event_entity: event, limit: 12, layout: "list", columns: 3 };
   }
 }
+
+// Language for the card picker: the frontend's, read once when the file loads.
+const CARD_LANG = pickLang(document.querySelector("home-assistant")?.hass?.locale?.language);
 
 if (!customElements.get("vicohome-events-card")) {
   customElements.define("vicohome-events-card", VicoHomeEventsCard);
   window.customCards = window.customCards || [];
   window.customCards.push({
     type: "vicohome-events-card",
-    name: "VicoHome: eventi",
-    description: "Eventi e live registrate con la loro foto; filtro per giorno e tipo, toccandone uno si apre il video.",
+    name: I18N[CARD_LANG].card_name,
+    description: I18N[CARD_LANG].card_desc,
     preview: false,
   });
 }

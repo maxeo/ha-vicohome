@@ -57,7 +57,7 @@
         "state_attributes": {
           "event_type": {
             "state": {
-              "ring": "Ring",
+              "ring": "Doorbell",
               "person": "Person",
               "vehicle": "Vehicle",
               "pet": "Pet",

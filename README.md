@@ -3,7 +3,7 @@
 Integrazione custom per camere e campanelli **VicoHome** (piattaforma A4x/Addx), con
 **live view nativa WebRTC** nel player di Home Assistant.
 
-Stato: **0.5.12, sperimentale**. Provata il 17/11/2026 con un campanello DB2 (a batteria): live con audio, anche con il campanello su un'altra rete; live registrate e clip archiviate in locale.
+Stato: **0.6.0, sperimentale**. Provata il 17/11/2026 con un campanello DB2 (a batteria): live con audio, anche con il campanello su un'altra rete; live registrate e clip archiviate in locale.
 
 ## Cosa fa
 
@@ -63,6 +63,10 @@ dall'app. Usare un **account secondario** e condividergli le camere dall'app pri
 
 Copiare `custom_components/vicohome` in `/config/custom_components/`, riavviare HA,
 poi Impostazioni → Dispositivi e servizi → Aggiungi integrazione → **VicoHome**.
+
+Lingue: **italiano, inglese e tedesco** (configurazione, opzioni, entità, media browser e scheda eventi);
+con altre lingue i testi sono in inglese. La scheda segue la lingua del profilo utente, il media browser
+quella del server.
 
 **Opzioni** (⚙ Configura sull'integrazione):
 - **Cosa registrare**: campanello, persona, veicolo, animale, pacco, movimento, camera avviata (live aperta da HA)

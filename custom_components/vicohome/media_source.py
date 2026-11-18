@@ -17,10 +17,18 @@ from .clip_view import archive_url, clip_url
 from .clips import async_list_clips
 from .const import DOMAIN
 from .coordinator import VicoCoordinator
+from .events import ui_language
 
 async def async_get_media_source(hass: HomeAssistant) -> MediaSource:
     return VicoMediaSource(hass)
 
+
+# Title of a camera folder: archive of N days, or kept forever.
+FOLDER_TITLE = {
+    "it": ("ultimi {days} giorni", "archivio completo"),
+    "en": ("last {days} days", "full archive"),
+    "de": ("letzte {days} Tage", "gesamtes Archiv"),
+}
 
 class VicoMediaSource(MediaSource):
     """Identifiers: "<entry_id>/<serial>" (camera) and "<entry_id>/<serial>/<traceId>" (clip)."""
@@ -84,6 +92,7 @@ class VicoMediaSource(MediaSource):
         coord = self._coordinator(entry_id)
         cam = (coord.data or {}).get(serial)
         days = coord.archive.days if coord.archive else 7
+        lang = ui_language(self.hass.config.language)
         children = []
         for clip in await async_list_clips(self.hass, coord, entry_id, serial):
             when = dt_util.as_local(dt_util.utc_from_timestamp(clip.ts)).strftime("%d/%m %H:%M:%S") if clip.ts else "?"
@@ -93,7 +102,7 @@ class VicoMediaSource(MediaSource):
                 identifier=f"{entry_id}/{serial}/{clip.id}",
                 media_class=MediaClass.VIDEO,
                 media_content_type=MediaType.VIDEO,
-                title=f"{when} · {clip.label}{secs}" + ("" if clip.archived else " ☁"),
+                title=f"{when} · {clip.label(lang)}{secs}" + ("" if clip.archived else " ☁"),
                 can_play=clip.playable,
                 can_expand=False,
                 thumbnail=clip.thumbnail,
@@ -102,6 +111,6 @@ class VicoMediaSource(MediaSource):
         return BrowseMediaSource(
             domain=DOMAIN, identifier=f"{entry_id}/{serial}", media_class=MediaClass.DIRECTORY,
             media_content_type=MediaType.VIDEO,
-            title=f"{name} (ultimi {days} giorni)" if days else f"{name} (archivio completo)",
+            title=f"{name} ({FOLDER_TITLE[lang][0].format(days=days)})" if days else f"{name} ({FOLDER_TITLE[lang][1]})",
             can_play=False, can_expand=True, children=children, children_media_class=MediaClass.VIDEO,
         )

@@ -15,7 +15,7 @@
   "requirements": [
     "firebase-messaging>=0.4.0"
   ],
-  "version": "0.5.12",
+  "version": "0.6.0",
   "after_dependencies": [
     "media_source"
   ]

@@ -12,7 +12,7 @@ from homeassistant.core import HomeAssistant
 from .api import VicoError
 from .clip_view import archive_url, clip_url
 from .coordinator import VicoCoordinator, ts_seconds
-from .events import TYPE_LABEL_IT, event_type
+from .events import event_type, type_label
 
 CLOUD_LIMIT = 60
 SIGN_TTL = timedelta(hours=1)
@@ -29,9 +29,8 @@ class Clip:
     thumbnail: str | None  # ready to use in <img> (signed, or the cloud's own URL)
     video_path: str | None  # relative path of the MP4 view, not signed yet
 
-    @property
-    def label(self) -> str:
-        return TYPE_LABEL_IT.get(self.kind, self.kind)
+    def label(self, language: str | None) -> str:
+        return type_label(self.kind, language)
 
 
 async def async_list_clips(hass: HomeAssistant, coord: VicoCoordinator, entry_id: str, serial: str) -> list[Clip]:
