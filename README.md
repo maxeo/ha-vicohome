@@ -96,7 +96,10 @@ vettoriale è `docs/icon.svg`.
 Per capire i campi di un modello nuovo: menu dell'integrazione → **Scarica diagnostica**
 (dati del cloud con email, token, IP, MAC e URL oscurati).
 
-## Crediti e licenze
+## Ringraziamenti, crediti e licenze
+
+Questa integrazione non esisterebbe senza il lavoro di chi ha studiato VicoHome prima di me: un grazie
+sincero agli autori dei progetti qui sotto, da cui ho imparato il protocollo e preso spunto.
 
 - [averagenative/vicolocal](https://github.com/averagenative/vicolocal) (MIT): protocollo di
   signaling e codec SDP (`vico_sdp.py` copiato invariato, vedi `LICENSE.vicolocal`).
