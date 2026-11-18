@@ -1,119 +1,125 @@
-# VicoHome per Home Assistant
+# VicoHome for Home Assistant
 
-Integrazione custom per camere e campanelli **VicoHome** (piattaforma A4x/Addx), con
-**live view nativa WebRTC** nel player di Home Assistant.
+**English** · [Italiano](README.it.md)
 
-Stato: **0.6.0, sperimentale**. Provata il 17/11/2026 con un campanello DB2 (a batteria): live con audio, anche con il campanello su un'altra rete; live registrate e clip archiviate in locale.
+Custom integration for **VicoHome** cameras and doorbells (A4x/Addx platform), with a
+**native WebRTC live view** in the Home Assistant player.
 
-## Cosa fa
+Status: **0.6.0, experimental**. Tested on 17/11/2026 with a DB2 doorbell (battery powered): live view with
+audio, also with the doorbell on another network; recorded live views and clips archived locally.
 
-Per ogni camera dell'account (anche quelle condivise):
+## What it does
 
-| Entità | Fonte |
+For every camera in the account (shared ones included):
+
+| Entity | Source |
 |---|---|
-| Camera con **live** (WebRTC) e immagine fissa | live: signaling via cloud, video diretto camera → browser; immagine: copertina cloud o foto dell'ultimo evento |
-| Batteria, segnale Wi-Fi, IP, rete Wi-Fi | `/device/listuserdevices` |
-| Ultimo evento (con tag AI, foto e video HLS negli attributi) | `/library/newselectlibrary` |
-| Evento recente (on per 2 minuti dopo un evento), in carica, online, sveglio | idem |
-| **Evento** `event.*_attivita`: `ring` (campanello), `person`, `vehicle`, `pet`, `package`, `motion`, `live` (camera avviata, quando il file è salvato) | **push FCM istantanea** (misurato ~1 s dalla pressione); in riserva i nuovi elementi della libreria (polling 30 s) |
-| Scheda dashboard **VicoHome: eventi** (`custom:vicohome-events-card`): eventi e live con foto, etichetta e ora, in elenco o in griglia divisi per giorno; filtro per periodo (oggi, ieri, ultime 24 ore, 7 o 30 giorni, un giorno o un intervallo dal calendario) e per tipo, "Carica altri" per andare indietro; toccandone uno il video si apre in una finestra | comando websocket `vicohome/events` (archivio + cloud, URL firmati per 1 ora); il JS è servito da `/vicohome_static/` e caricato sempre |
-| **Archivio locale** (7 giorni) in `/config/vicohome/<entry>/`: ogni evento finito viene scaricato come MP4 + JPEG, e ogni live guardata viene registrata | eventi: HLS della libreria convertito da ffmpeg senza ricodifica (la traccia audio iniziale blocca il player); live: ffmpeg legge l'RTSP del ponte go2rtc (video copiato, audio in AAC) |
-| **Media browser** → VicoHome → camera: archivio locale + clip cloud non ancora scaricate (☁) | archivio servito da `/api/vicohome/archive/...`, clip cloud convertite al volo da `/api/vicohome/clip/...` |
+| Camera with **live view** (WebRTC) and still image | live: signaling through the cloud, video straight camera → browser; image: cloud cover or photo of the last event |
+| Battery, Wi-Fi signal, IP, Wi-Fi network | `/device/listuserdevices` |
+| Last event (AI tags, photo and HLS video in the attributes) | `/library/newselectlibrary` |
+| Recent event (on for 2 minutes after an event), charging, online, awake | same |
+| **Event** `event.*_activity`: `ring` (doorbell), `person`, `vehicle`, `pet`, `package`, `motion`, `live` (camera started, once the file is saved) | **instant FCM push** (measured ~1 s from the button press); as a fallback, new library items (30 s polling) |
+| Dashboard card **VicoHome: events** (`custom:vicohome-events-card`): events and live views with photo, label and time, as a list or a grid grouped by day; filter by period (today, yesterday, last 24 hours, 7 or 30 days, a single day or a range from the calendar) and by type, "Load more" to go back in time; tap one to open the video in a dialog | websocket command `vicohome/events` (archive + cloud, URLs signed for 1 hour); the JS is served from `/vicohome_static/` and always loaded |
+| **Local archive** (7 days by default, configurable) in `/config/vicohome/<entry>/`: every finished event is downloaded as MP4 + JPEG, and every live view watched is recorded | events: the library HLS remuxed by ffmpeg without re-encoding (the initial audio track stalls the player); live: ffmpeg reads the RTSP of the go2rtc bridge (video copied, audio to AAC) |
+| **Media browser** → VicoHome → camera: local archive + cloud clips not downloaded yet (☁) | archive served by `/api/vicohome/archive/...`, cloud clips remuxed on the fly by `/api/vicohome/clip/...` |
 
-Il polling (ogni 30 s) legge solo il cloud e **non sveglia** le camere a batteria.
-La live invece sveglia la camera: tenerla aperta consuma batteria.
+Polling (every 30 s) only reads the cloud and **does not wake** battery cameras.
+The live view does wake the camera: keeping it open drains the battery.
 
-## Come funziona la live
+## How the live view works
 
-Per poter registrare, la live passa da un **go2rtc privato** (il binario incluso in HA, avviato
-dall'integrazione su localhost con un server STUN; non tocca il go2rtc gestito da HA):
+To be able to record, the live view goes through a **private go2rtc** (the binary shipped with HA, started
+by the integration on localhost with a STUN server; it does not touch the go2rtc managed by HA):
 
 ```
-browser ──WebRTC──► go2rtc (porte 11985 API, 18564 RTSP, 18565 WebRTC) ──WebRTC/WHEP──► HA ──wss A4x──► cloud ──► camera
+browser ──WebRTC──► go2rtc (ports 11985 API, 18564 RTSP, 18565 WebRTC) ──WebRTC/WHEP──► HA ──wss A4x──► cloud ──► camera
                        │
-                       └──RTSP──► ffmpeg ──► /config/vicohome/<entry>/AAAAMMGG-hhmmss_<sn>_live.mp4
+                       └──RTSP──► ffmpeg ──► /config/vicohome/<entry>/YYYYMMDD-hhmmss_<sn>_live.mp4
 ```
 
-- go2rtc prende la camera da `/api/vicohome/whep/<chiave>/...` (chiave casuale a ogni avvio): HA inoltra
-  l'offerta col signaling A4x (SDP compresso "KISS") e restituisce la risposta della camera.
-- La camera risponde sempre audio = mid 0 e video = mid 1, mentre go2rtc offre prima il video: l'offerta
-  viene riordinata e la risposta rimappata sui mid di go2rtc.
-- Una camera che si sveglia può annunciarsi due volte (`PEER_IN`): in quel caso l'offerta viene reinviata.
-- Chiusa la live, ffmpeg chiude il file e il collegamento con la camera viene chiuso (torna a dormire).
-- **Microfono acceso** (audio `sendrecv` con SSRC nell'offerta del browser): la live va diretta
-  browser ↔ camera, senza registrazione. Lo stesso percorso diretto è la riserva se go2rtc non parte.
-  Qui HA fa solo da ponte di signaling: l'audio viene annunciato `sendrecv` con un SSRC e la risposta
-  della camera viene riordinata come l'offerta del browser.
+- go2rtc pulls the camera from `/api/vicohome/whep/<key>/...` (random key at every start): HA forwards
+  the offer over the A4x signaling (compressed "KISS" SDP) and returns the camera's answer.
+- The camera always answers audio = mid 0 and video = mid 1, while go2rtc offers video first: the offer
+  is reordered and the answer mapped back to go2rtc's mids.
+- A camera that is waking up may announce itself twice (`PEER_IN`): the offer is then sent again.
+- When the live view closes, ffmpeg finalizes the file and the link to the camera is closed (it goes back to sleep).
+- **Microphone on** (`sendrecv` audio with an SSRC in the browser's offer): the live view goes straight
+  browser ↔ camera, without recording. The same direct path is the fallback if go2rtc does not start.
+  Here HA only relays the signaling: audio is announced `sendrecv` with an SSRC and the camera's answer
+  is reordered like the browser's offer.
 
-## Notifiche push
+## Push notifications
 
-HA si registra su Firebase Cloud Messaging con l'identità FCM pubblica dell'app Android (come fa
-l'integrazione Ring) e passa il token al cloud con `/user/setusertoken` (`msgType` `"101"`).
-Le push di VicoHome (`type` `"3"` = campanello, con `serialNumber` e `traceId`) fanno scattare subito
-l'entità evento; lo stesso `traceId` arriva poi dalla libreria e viene ignorato.
-Il client `firebase-messaging` è esteso perché le push di VicoHome hanno l'header `crypto-key` con più
-campi; un watchdog lo riavvia se si ferma. Le credenziali FCM sono in `.storage/vicohome.<entry>.fcm`.
+HA registers with Firebase Cloud Messaging using the public FCM identity of the Android app (as the Ring
+integration does) and hands the token to the cloud with `/user/setusertoken` (`msgType` `"101"`).
+VicoHome pushes (`type` `"3"` = doorbell, with `serialNumber` and `traceId`) fire the event entity at once;
+the same `traceId` later comes from the library and is ignored.
+The `firebase-messaging` client is extended because VicoHome pushes carry a `crypto-key` header with several
+fields; a watchdog restarts it if it stops. FCM credentials are stored in `.storage/vicohome.<entry>.fcm`.
 
 ## Account
 
-VicoHome permette **una sola sessione per account**: ogni login scollega lo stesso account
-dall'app. Usare un **account secondario** e condividergli le camere dall'app principale.
+VicoHome allows **one session per account**: every login signs the same account out of the app.
+Use a **secondary account** and share the cameras to it from the main app.
 
-## Installazione (manuale)
+## Installation
 
-Copiare `custom_components/vicohome` in `/config/custom_components/`, riavviare HA,
-poi Impostazioni → Dispositivi e servizi → Aggiungi integrazione → **VicoHome**.
+**HACS**: HACS → ⋮ menu → Custom repositories → `https://github.com/maxeo/ha-vicohome`, category
+Integration; then install **VicoHome** and restart HA.
 
-Lingue: **italiano, inglese e tedesco** (configurazione, opzioni, entità, media browser e scheda eventi);
-con altre lingue i testi sono in inglese. La scheda segue la lingua del profilo utente, il media browser
-quella del server.
+**Manual**: copy `custom_components/vicohome` into `/config/custom_components/`, restart HA,
+then Settings → Devices & services → Add integration → **VicoHome**.
 
-**Opzioni** (⚙ Configura sull'integrazione):
-- **Cosa registrare**: campanello, persona, veicolo, animale, pacco, movimento, camera avviata (live aperta da HA)
-  (scelta multipla; senza "camera avviata" la live va diretta camera → browser, senza go2rtc);
-- **Conservazione**: da 1 giorno a 1 anno, "Per sempre" (cancellazione manuale da `config/vicohome`) o
-  "Personalizzato…" (secondo passaggio con il numero di giorni, fino a 3650).
+Languages: **English, Italian and German** (setup, options, entities, media browser and events card);
+other languages fall back to English. The card follows the user's profile language, the media browser
+the server's.
 
-La scheda eventi è sempre disponibile in "Aggiungi scheda" (**VicoHome: eventi**); va aggiunta a mano alla
-dashboard che si preferisce. Configurazione (tutti i campi sono facoltativi):
+**Options** (⚙ Configure on the integration):
+- **What to record**: doorbell, person, vehicle, pet, package, motion, camera started (live view opened from HA)
+  (multiple choice; without "camera started" the live view goes straight camera → browser, without go2rtc);
+- **Retention**: from 1 day to 1 year, "Forever" (manual cleanup of `config/vicohome`) or
+  "Custom…" (a second step asks for the number of days, up to 3650).
+
+The events card is always available in "Add card" (**VicoHome: events**); add it by hand to the dashboard
+you prefer. Configuration (all fields are optional):
 
 ```yaml
 type: custom:vicohome-events-card
-camera: camera.cancello_esterno_campanello      # senza: tutte le camere
-event_entity: event.cancello_esterno_campanello_attivita  # si aggiorna a ogni nuovo evento
-limit: 12                                      # eventi per pagina
-layout: list                                   # list (elenco per giorno) o grid; il pulsante in alto lo cambia
-columns: 3                                     # solo per grid
-title: Eventi
+camera: camera.front_gate_doorbell             # omitted: all cameras
+event_entity: event.front_gate_doorbell_activity  # refreshes at every new event
+limit: 12                                      # events per page
+layout: list                                   # list (grouped by day) or grid; the button at the top switches it
+columns: 3                                     # grid only
+title: Events
 ```
 
-Le opzioni si applicano senza ricaricare l'integrazione: così le entità non diventano "non disponibili" e
-l'entità evento non registra di nuovo l'ultimo evento ripristinato.
+Options apply without reloading the integration: entities do not turn "unavailable" and the event entity
+does not record the restored last event again.
 
-L'icona è in `custom_components/vicohome/brand/` (HA la usa per le integrazioni custom); il sorgente
-vettoriale è `docs/icon.svg`.
+The icon is in `custom_components/vicohome/brand/` (HA uses it for custom integrations); the vector
+source is `docs/icon.svg`.
 
-Per capire i campi di un modello nuovo: menu dell'integrazione → **Scarica diagnostica**
-(dati del cloud con email, token, IP, MAC e URL oscurati).
+To understand the fields of a new model: integration menu → **Download diagnostics**
+(cloud data with email, token, IP, MAC and URLs redacted).
 
-## Ringraziamenti, crediti e licenze
+## Thanks, credits and licenses
 
-Questa integrazione non esisterebbe senza il lavoro di chi ha studiato VicoHome prima di me: un grazie
-sincero agli autori dei progetti qui sotto, da cui ho imparato il protocollo e preso spunto.
+This integration would not exist without the work of those who studied VicoHome before me: a sincere
+thank you to the authors of the projects below, from whom I learned the protocol and took inspiration.
 
-- [averagenative/vicolocal](https://github.com/averagenative/vicolocal) (MIT): protocollo di
-  signaling e codec SDP (`vico_sdp.py` copiato invariato, vedi `LICENSE.vicolocal`).
-- [dydx/vico-cli](https://github.com/dydx/vico-cli) (MIT): login, elenco dispositivi, eventi.
-- [TomTje/vicohome-ha](https://github.com/TomTje/vicohome-ha) (MIT): prima integrazione HA.
+- [averagenative/vicolocal](https://github.com/averagenative/vicolocal) (MIT): signaling protocol and
+  SDP codec (`vico_sdp.py` copied unchanged, see `LICENSE.vicolocal`).
+- [dydx/vico-cli](https://github.com/dydx/vico-cli) (MIT): login, device list, events.
+- [TomTje/vicohome-ha](https://github.com/TomTje/vicohome-ha) (MIT): the first HA integration.
 
-Progetto non affiliato con VicoHome.
+Not affiliated with VicoHome.
 
-## Da fare
+## To do
 
-Endpoint presenti nell'app Android (elenco in `docs/endpoints-app.txt`), corpo delle richieste da ricavare:
-- sirena: `device/doalarm`, `device/cancelAlarm`;
-- impostazioni: `device/getuserconfig` / `device/updateuserconfig`, `device/getDeviceAttributes` /
+Endpoints found in the Android app (list in `docs/endpoints-app.txt`), request bodies still to be worked out:
+- siren: `device/doalarm`, `device/cancelAlarm`;
+- settings: `device/getuserconfig` / `device/updateuserconfig`, `device/getDeviceAttributes` /
   `device/modifyDeviceAttributes`, `device/updatepersondetect`;
-- campanello: `device/config/querydoorbellconfig` / `updatedoorbellconfig`, `device/mechanical/dingdong/audition`;
-- luce: `device/queryWhiteLight`, `device/updateFloodlightSwitch`, `device/updateFloodlightLuminance`;
-- risveglio: `device/wakeupDevice`; pan/tilt: `device/rotate`, `device/rotateToPoint`;
+- doorbell: `device/config/querydoorbellconfig` / `updatedoorbellconfig`, `device/mechanical/dingdong/audition`;
+- light: `device/queryWhiteLight`, `device/updateFloodlightSwitch`, `device/updateFloodlightLuminance`;
+- wake-up: `device/wakeupDevice`; pan/tilt: `device/rotate`, `device/rotateToPoint`.
